@@ -1,6 +1,6 @@
 # OpenClaw 多 Agent 协作架构
 
-> 这是 Khalil 的 OpenClaw 实战架构，供参考和复用。
+> 基于真实生产环境的实战架构，供参考和复用。
 
 ---
 
@@ -16,23 +16,22 @@
 ## 架构总览
 
 ```
-Telegram 无骨家族群
-├── 💬 General (topic:18)     → 无骨宏基（主 agent）
-├── 🤵 CEO (topic:1414)       → 无骨总裁（pulse-ceo agent）
-├── 💻 Coding (topic:10)      → 无骨宏基（主 agent）
-├── 🧠 Learning (topic:8)     → 无骨宏基（词汇推送）
-├── 💪 Fitness (topic:1194)   → 无骨宏基（健康教练）
-├── 📋 Tasks (topic:6)        → 无骨宏基
-├── 💰 Business (topic:14)    → 无骨宏基
-└── 📖 Books (topic:12)       → 无骨宏基
+Telegram 群（Forum 模式）
+├── 💬 General        → 主 agent（日常对话）
+├── 🤵 CEO            → CEO agent（产品策略）
+├── 💻 Coding         → 主 agent（Claude Code 执行）
+├── 🧠 Learning       → 主 agent（学习内容推送）
+├── 💪 Fitness        → 主 agent（健康教练）
+├── 📋 Tasks          → 主 agent（任务追踪）
+├── 💰 Business       → 主 agent（商业分析）
+└── 📖 Books          → 主 agent（读书笔记）
 ```
 
 ---
 
-## Agent 1：无骨宏基（主 agent）
+## Agent 1：主 agent
 
 **角色：** 全能执行者 + 私人助理  
-**Bot：** @wuguhongji_bot  
 **负责：** 所有 topic（除 CEO）
 
 **做什么：**
@@ -51,23 +50,22 @@ Telegram 无骨家族群
 
 ---
 
-## Agent 2：无骨总裁（pulse-ceo agent）
+## Agent 2：CEO agent
 
 **角色：** 产品 CEO + 商业策略  
-**Bot：** @wuguCEO_bot  
 **负责：** CEO topic only  
-**Workspace：** `~/.openclaw/workspaces/pulse-ceo/`
+**Workspace：** `~/.openclaw/workspaces/ceo-agent/`
 
 **做什么：**
-- 产品策略、ASO 优化、用户增长
+- 产品策略、用户增长
 - Review Coding agent 的完成情况
 - 派发新任务到 Coding topic
 - 维护产品路线图
 
 **配置文件：**
 ```
-~/.openclaw/workspaces/pulse-ceo/SOUL.md   # CEO 人设
-~/.openclaw/workspaces/pulse-ceo/NOW.md    # 进度交接
+~/.openclaw/workspaces/ceo-agent/SOUL.md   # CEO 人设
+~/.openclaw/workspaces/ceo-agent/NOW.md    # 进度交接
 ```
 
 ---
@@ -77,7 +75,7 @@ Telegram 无骨家族群
 ### 核心机制：共享任务文件
 
 ```
-~/.openclaw/workspace/pulse-tasks.json
+~/.openclaw/workspace/tasks.json
 ```
 
 ```json
@@ -99,8 +97,8 @@ Telegram 无骨家族群
 
 ```
 CEO 在 CEO topic 分析产品进展
-    ↓ 派任务（写入 pulse-tasks.json）
-Coding topic 的宏基接到任务
+    ↓ 派任务（写入 tasks.json）
+Coding topic 的主 agent 接到任务
     ↓ 用 Claude Code 写代码
     ↓ Build + commit + push
     ↓ 通知 CEO topic 完成
@@ -115,7 +113,7 @@ CEO review → 派下一个任务
 ```bash
 # CEO 写完任务后，注入到 Coding session
 openclaw agent \
-  --session-key "agent:main:telegram:group:GROUP_ID:topic:10" \
+  --session-key "agent:main:telegram:group:GROUP_ID:topic:CODING_TOPIC_ID" \
   --message "📋 CEO 新任务：[任务描述]" \
   --channel telegram --deliver --reply-to "GROUP_ID"
 ```
@@ -124,7 +122,7 @@ openclaw agent \
 ```bash
 # .git/hooks/post-commit
 openclaw agent \
-  --session-key "agent:pulse-ceo:telegram:group:GROUP_ID:topic:CEO_TOPIC_ID" \
+  --session-key "agent:ceo-agent:telegram:group:GROUP_ID:topic:CEO_TOPIC_ID" \
   --message "📊 Coding 完成：$(git log --oneline -1)" \
   --channel telegram --deliver --reply-to "GROUP_ID"
 ```
@@ -148,19 +146,18 @@ openclaw agent \
 ### 分层架构
 
 ```
-SOUL.md         → 核心人设（每次都读）
-USER.md         → 用户信息（每次都读）
-NOW.md          → Session 交接（新 session 先读）
-MEMORY.md       → 长期记忆（主 session 读）
+SOUL.md               → 核心人设（每次都读）
+USER.md               → 用户信息（每次都读）
+NOW.md                → Session 交接（新 session 先读）
+MEMORY.md             → 长期记忆（主 session 读）
 memory/YYYY-MM-DD.md  → 每日日记
-memory/knowledge.json → 结构化知识库（v2）
 ```
 
 ### 语义搜索
 
 ```bash
 # 搜索历史记忆
-python3 ~/.openclaw/workspace/memory/memory_search.py "PulseWatch 项目"
+python3 ~/.openclaw/workspace/memory/memory_search.py "关键词"
 
 # 只更新索引
 python3 ~/.openclaw/workspace/memory/memory_search.py --index-only
@@ -184,24 +181,24 @@ python3 ~/.openclaw/workspace/memory/memory_search.py --index-only
 
 ```bash
 # 新建 agent
-openclaw agents add my-ceo-agent \
-  --workspace ~/.openclaw/workspaces/my-ceo/ \
+openclaw agents add ceo-agent \
+  --workspace ~/.openclaw/workspaces/ceo-agent/ \
   --non-interactive
 
 # 配置 Telegram bot
-openclaw config set channels.telegram.accounts.my-ceo.botToken "BOT_TOKEN"
-openclaw config set channels.telegram.accounts.my-ceo.groupPolicy "open"
+openclaw config set channels.telegram.accounts.ceo-agent.botToken "BOT_TOKEN"
+openclaw config set channels.telegram.accounts.ceo-agent.groupPolicy "open"
 
 # 绑定到 bot
-openclaw agents bind --agent my-ceo-agent --bind telegram:my-ceo
+openclaw agents bind --agent ceo-agent --bind telegram:ceo-agent
 ```
 
 ### 3. 路由 Topic 到指定 Agent
 
 ```bash
-# topic 1414 的消息路由给 CEO agent
+# 指定 topic 的消息路由给 CEO agent
 openclaw config set 'channels.telegram.groups.GROUP_ID.topics' \
-  '{"1414":{"agentId":"my-ceo-agent"}}' --json
+  '{"CEO_TOPIC_ID":{"agentId":"ceo-agent"}}' --json
 ```
 
 ### 4. 设置 Git Hook（自动协作）
@@ -210,7 +207,7 @@ openclaw config set 'channels.telegram.groups.GROUP_ID.topics' \
 cat > ~/Projects/your-project/.git/hooks/post-commit << 'EOF'
 #!/bin/bash
 openclaw agent \
-  --session-key "agent:my-ceo-agent:telegram:group:GROUP_ID:topic:CEO_TOPIC_ID" \
+  --session-key "agent:ceo-agent:telegram:group:GROUP_ID:topic:CEO_TOPIC_ID" \
   --message "📊 Coding 完成：$(git log --oneline -1). 请 review 并派下一个任务" \
   --channel telegram --deliver --reply-to "GROUP_ID" &
 EOF
@@ -238,4 +235,4 @@ chmod +x ~/Projects/your-project/.git/hooks/post-commit
 
 ---
 
-*文档基于 Khalil 的实际生产环境，OpenClaw 2026.3.13*
+*文档基于真实生产环境，OpenClaw 2026*
