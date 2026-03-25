@@ -37,7 +37,7 @@ Telegram 无骨家族群
 
 **做什么：**
 - Coding topic：用 Claude Code PTY 写代码、build、push
-- Learning topic：每天 8-20 点每 2 小时推多邻国词汇
+- Learning topic：推送学习内容（可自定义，如词汇、资讯等）
 - Fitness topic：读 Apple Health 数据，给训练建议
 - General topic：日常对话、信息搜索、文件处理
 
@@ -137,8 +137,7 @@ openclaw agent \
 
 | 名称 | 时间 | 负责 | 说明 |
 |------|------|------|------|
-| duolingo-vocab-push | 每天 8-20 点每 2 小时 | 主 agent | 推 20 个多邻国词汇 |
-| pulse-morning-brief | 每天 8:00 | 主 agent | 健康晨报 |
+| morning-brief | 每天 8:00 | 主 agent | 健康晨报 |
 | daily-tech-digest | 每天 9:00 | 主 agent | HN/GitHub 技术摘要 |
 | agent-loop-check | 每 10 分钟 | CEO agent | 检查任务进展 |
 
